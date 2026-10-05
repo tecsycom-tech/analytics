@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reportería · Peru Fibra</title>
+
+<!-- Fuentes e Iconos -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  tailwind.config = {
+    theme: {
+      extend: {
+        fontFamily: {
+          sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+          mono: ['"JetBrains Mono"', 'monospace'],
+        },
+        colors: {
+          brand: {
+            50: '#f0fdfa',
+            100: '#ccfbf1',
+            400: '#2dd4bf',
+            500: '#0d9488',
+            600: '#0f766e',
+            900: '#134e4a',
+            950: '#042f2e',
+          }
+        }
+      }
+    }
+  }
+</script>
+
+<!-- Librerías JS Externas -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://unpkg.com/lucide@latest"></script>
+
+<style>
+  body {
+    background-color: #f8fafc;
+    color: #1e293b;
+  }
+  
+  /* Glassmorphism Light */
+  .glass-card {
+    background: rgba(255, 255, 255, 0.9);
+    backdrop-filter: blur(12px);
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+  }
+
+  .glass-card-hover {
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .glass-card-hover:hover {
+    border-color: rgba(13, 148, 136, 0.4);
+    box-shadow: 0 10px 25px -5px rgba(13, 148, 136, 0.1);
+  }
+
+  /* Custom Scrollbar Light */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f5f9;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #0d9488;
+  }
+
+  /* Keyframe Animations */
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+
+  /* Accordion Transition */
+  .child-row {
+    display: none;
+  }
+  .child-row.open {
+    display: table-row;
+  }
+
+  .rotate-arrow {
+    transition: transform 0.2s ease;
+  }
+  .grp-active .rotate-arrow {
+    transform: rotate(90deg);
+  }
+
+  /* Sticky First Column for Wide Tables */
+  .sticky-col {
+    position: sticky;
+    left: 0;
+    z-index: 10;
+    background-color: #ffffff;
+  }
+</style>
+</head>
+<body class="min-h-screen flex flex-col font-sans antialiased text-slate-800 selection:bg-brand-500/20 selection:text-brand-600">
+
+  <!-- TOP BAR / HEADER -->
+  <header class="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-40">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-4">
+      
+      <!-- LOGO & BRAND -->
+      <div class="flex items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20 text-white">
+          <i data-lucide="bar-chart-3" class="w-5 h-5 stroke-[2.5]"></i>
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <h1 class="text-base font-bold text-slate-900 tracking-tight">Peru Fibra</h1>
+            <span class="text-[10px] font-semibold uppercase tracking-wider bg-brand-50 text-brand-600 px-2 py-0.5 rounded-full border border-brand-200">Reportería Comercial</span>
+          </div>
+          <p class="text-xs text-slate-500 flex items-center gap-1.5 mt-0.5">
+            <span>Resultado_Por_Cliente</span>
+          </p>
+        </div>
+      </div>
+
+      <!-- STATUS BADGE -->
+      <div class="flex items-center gap-3">
+        <div id="statusline" class="text-xs font-medium text-slate-600 bg-slate-100 px-3.5 py-1.5 rounded-full border border-slate-200 flex items-center gap-2">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-slate-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-slate-400" id="statusDot"></span>
+          </span>
+          <span id="statusText">Esperando archivo Excel</span>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN CONTAINER -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+
+    <!-- UPLOAD DROPZONE SECTION -->
+    <section>
+      <div id="drop" class="glass-card border-2 border-dashed border-slate-300 hover:border-brand-500/60 rounded-2xl p-8 sm:p-10 text-center transition-all duration-300 group cursor-pointer relative overflow-hidden bg-white">
+        
+        <!-- Subtle Glow Effect -->
+        <div class="absolute -inset-1 bg-gradient-to-r from-brand-500/5 to-blue-500/5 rounded-2xl blur opacity-0 group-hover:opacity-100 transition duration-500 pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col items-center justify-center gap-3">
+          <div class="w-14 h-14 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-center text-slate-500 group-hover:text-brand-600 group-hover:scale-110 group-hover:border-brand-500/30 transition-all duration-300 shadow-sm">
+            <i data-lucide="file-up" class="w-7 h-7"></i>
+          </div>
+
+          <div>
+            <h3 class="text-base font-semibold text-slate-800 group-hover:text-brand-600 transition-colors">Arrastra tu archivo Excel aquí</h3>
+            <p class="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
+              Soporta formatos <span class="text-slate-700 font-mono">.xlsx</span> y <span class="text-slate-700 font-mono">.xls</span>. Procesamiento 100% local en tu navegador.
+            </p>
+          </div>
+
+          <div class="mt-2">
+            <label for="file" class="inline-flex items-center gap-2 bg-brand-500 hover:bg-brand-600 text-white font-semibold text-xs px-4 py-2.5 rounded-xl cursor-pointer shadow-md shadow-brand-500/20 hover:shadow-brand-500/30 transition-all duration-200">
+              <i data-lucide="folder-open" class="w-4 h-4"></i>
+              Elegir archivo
+            </label>
+            <input type="file" id="file" class="hidden" accept=".xlsx,.xls">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- DASHBOARD WORKSPACE (HIDDEN UNTIL LOADED) -->
+    <div id="dash" class="hidden space-y-8">
+
+      <!-- FILTERS BAR -->
+      <section class="glass-card rounded-2xl p-4 flex flex-wrap items-center justify-between gap-4 border border-slate-200">
+        <div class="flex items-center gap-2 text-xs font-semibold text-slate-700 uppercase tracking-wider">
+          <i data-lucide="filter" class="w-4 h-4 text-brand-600"></i>
+          <span>Filtros de Segmentación</span>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-4">
+          <!-- Departamento -->
+          <div class="flex items-center gap-2">
+            <label for="deptFilter" class="text-xs text-slate-600 font-medium">Departamento:</label>
+            <select id="deptFilter" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 shadow-sm">
+              <option value="">Todos los departamentos</option>
+            </select>
+          </div>
+
+          <!-- Socio -->
+          <div class="flex items-center gap-2">
+            <label for="socioFilter" class="text-xs text-slate-600 font-medium">Socio:</label>
+            <select id="socioFilter" class="bg-white border border-slate-300 text-slate-800 text-xs rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 shadow-sm">
+              <option value="">Todos los socios</option>
+            </select>
+          </div>
+        </div>
+      </section>
+
+      <!-- KPI CARDS GRID (DISPOSICIÓN HORIZONTAL) -->
+      <section class="w-full">
+        <div id="kpis" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-4 gap-4 w-full"></div>
+      </section>
+
+      <!-- RESUMEN POR SOCIO -->
+      <section class="space-y-3">
+        <div class="flex items-center justify-between">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-brand-500"></span>
+              Resumen General por Socio
+            </h2>
+            <p class="text-xs text-slate-500">Consolidado métrico dinámico calculado directamente desde los datos cargados.</p>
+          </div>
+          <span class="text-[11px] text-slate-400 font-mono hidden sm:inline-block">Desplaza horizontalmente para ver todas las métricas</span>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden border border-slate-200">
+          <div id="socioPanel" class="overflow-x-auto">
+            <table id="socioTable" class="w-full text-left text-xs whitespace-nowrap min-w-[1200px]">
+              <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px]"></thead>
+              <tbody class="divide-y divide-slate-200 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- TWO COLUMN GRID: TIPIFICACIONES & MOTOR DE GESTION -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- TIPIFICACIONES (SPAN 7) -->
+        <section class="lg:col-span-7 space-y-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+              Tipificaciones de Gestión
+            </h2>
+            <p class="text-xs text-slate-500">Desglose por Tipo de contacto → Concepto. Haz clic en una categoría para desplegar.</p>
+          </div>
+
+          <div class="glass-card rounded-2xl overflow-hidden border border-slate-200">
+            <div class="overflow-x-auto max-h-[400px]">
+              <table id="tipTable" class="w-full text-left text-xs">
+                <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px] sticky top-0">
+                  <tr>
+                    <th class="py-3 px-4">Categoría / Concepto</th>
+                    <th class="py-3 px-4 text-right"># Gestiones</th>
+                    <th class="py-3 px-4 text-right">% Total</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 font-mono"></tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- MOTOR DE GESTION CHART (SPAN 5) -->
+        <section class="lg:col-span-5 space-y-3">
+          <div>
+            <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+              <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+              Motor de Gestión (Fuentes)
+            </h2>
+            <p class="text-xs text-slate-500">Distribución porcentual según origen.</p>
+          </div>
+
+          <div class="glass-card rounded-2xl p-5 border border-slate-200 flex flex-col items-center justify-center min-h-[380px]">
+            <div class="w-full max-w-[260px] relative">
+              <canvas id="motorChart"></canvas>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- RANKING DE AGENTES -->
+      <section class="space-y-3">
+        <div>
+          <h2 class="text-sm font-bold text-slate-900 flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+            Ranking de Agentes de Ventas
+          </h2>
+          <p class="text-xs text-slate-500">Top 15 asesores destacados por volumen de cierres comerciales.</p>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden border border-slate-200">
+          <div class="overflow-x-auto">
+            <table id="agenteTable" class="w-full text-left text-xs">
+              <thead class="bg-slate-100 text-slate-600 font-semibold border-b border-slate-200 uppercase tracking-wider text-[10px]">
+                <tr>
+                  <th class="py-3 px-4">Agente</th>
+                  <th class="py-3 px-4 text-right">Contactos</th>
+                  <th class="py-3 px-4 text-right">Agendados</th>
+                  <th class="py-3 px-4 text-right">Ventas</th>
+                  <th class="py-3 px-4 text-right">% Cierre</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200 font-mono"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+  </main>
+
+  <!-- LÓGICA JAVASCRIPT COMPLETA (100% INTACTA) -->
+  <script>
+    let RAW = [];
+    const $ = id => document.getElementById(id);
+    const $q = sel => document.querySelector(sel);
+    const pct = n => isFinite(n) ? (n * 100).toFixed(2) + '%' : '-';
+    const num = n => n != null ? n.toLocaleString('es-PE') : '0';
+
+    // Inicializar iconos Lucide
+    document.addEventListener("DOMContentLoaded", () => {
+      lucide.createIcons();
+    });
+
+    const drop = $('drop');
+    ['dragover', 'dragleave', 'drop'].forEach(evt => {
+      drop.addEventListener(evt, e => {
+        e.preventDefault();
+        if (evt === 'dragover') drop.classList.add('border-brand-500', 'bg-slate-50');
+        if (evt === 'dragleave') drop.classList.remove('border-brand-500', 'bg-slate-50');
+        if (evt === 'drop') {
+          drop.classList.remove('border-brand-500', 'bg-slate-50');
+          if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+        }
+      });
+    });
+
+    $('file').addEventListener('change', e => { 
+      if (e.target.files[0]) handleFile(e.target.files[0]); 
+    });
+
+    function updateStatus(text, type = 'normal') {
+      $('statusText').innerHTML = text;
+      const dot = $('statusDot');
+      if (type === 'loading') {
+        dot.className = "relative inline-flex rounded-full h-2 w-2 bg-amber-500";
+      } else if (type === 'success') {
+        dot.className = "relative inline-flex rounded-full h-2 w-2 bg-emerald-500";
+      } else if (type === 'error') {
+        dot.className = "relative inline-flex rounded-full h-2 w-2 bg-rose-500";
+      }
+    }
+
+    function handleFile(f) {
+      updateStatus(`Leyendo <b class="text-slate-800">${f.name}</b>...`, 'loading');
+      const reader = new FileReader();
+      
+      reader.onload = ev => {
+        try {
+          const wb = XLSX.read(ev.target.result, { type: 'array', cellDates: true });
+          const sheetName = wb.SheetNames.find(n => n.trim().toLowerCase() === 'resultado_por_cliente') || 
+                            wb.SheetNames.find(n => n.toLowerCase().includes('resultado'));
+          
+          if (!sheetName) { 
+            updateStatus('No se encontró la hoja Resultado_Por_Cliente.', 'error'); 
+            return; 
+          }
+
+          RAW = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: null });
+          updateStatus(`<b class="text-emerald-600">${f.name}</b> · ${num(RAW.length)} registros`, 'success');
+          
+          populateFilters();
+          render();
+          
+          $('dash').classList.remove('hidden');$('dash').classList.add('animate-fade-in');
+        } catch (err) {
+          updateStatus('Error leyendo el archivo: ' + err.message, 'error');
+        }
+      };
+      
+      reader.readAsArrayBuffer(f);
+    }
+
+    function populateFilters() {
+      const depts = [...new Set(RAW.map(r => r['Departamen']).filter(Boolean))].sort();
+      const socios = [...new Set(RAW.map(r => r['Socio']).filter(Boolean))].sort();
+
+      $('deptFilter').innerHTML = '<option value="">Todos los departamentos</option>' + depts.map(d => `<option value="${d}">${d}</option>`).join('');
+      $('socioFilter').innerHTML = '<option value="">Todos los socios</option>' + socios.map(s => `<option value="${s}">${s}</option>`).join('');
+
+      $('deptFilter').onchange = render;
+      $('socioFilter').onchange = render;
+    }
+
+    function getFiltered() {
+      const d = $('deptFilter').value, s =$('socioFilter').value;
+      return RAW.filter(r => (!d || r['Departamen'] === d) && (!s || r['Socio'] === s));
+    }
+
+    function sumBy(rows, col) { 
+      return rows.reduce((a, r) => a + (Number(r[col]) || 0), 0); 
+    }
+
+    function socioStats(rows) {
+      const registro = rows.length;
+      const CE = sumBy(rows, 'CE'), CNE = sumBy(rows, 'CNE'), NC = sumBy(rows, 'NC'), SG = sumBy(rows, 'SG');
+      const Venta = sumBy(rows, 'Venta'), Agendado = sumBy(rows, 'Agendado');
+      const Contacto = CE + CNE;
+
+      return {
+        registro, Contacto, CE, CNE, NC, SG, Venta, Agendado,
+        pContacto: registro ? Contacto / registro : 0, 
+        pCE: registro ? CE / registro : 0, 
+        pContValido: Contacto ? CE / Contacto : 0, 
+        pContNoValido: Contacto ? CNE / Contacto : 0,
+        pCNE: registro ? CNE / registro : 0, 
+        pNC: registro ? NC / registro : 0, 
+        pSG: registro ? SG / registro : 0, 
+        pTasaCierre: Contacto ? Venta / Contacto : 0,
+        pConversion: registro ? Venta / registro : 0, 
+        pAgendados: CE ? Agendado / CE : 0
+      };
+    }
+
+    let motorChart;
+
+    function render() {
+      const rows = getFiltered();
+      const tot = socioStats(rows);
+
+      // RENDERING KPI CARDS (DISEÑO HORIZONTAL)
+      const kpiDefs = [
+        { label: 'Registros Totales', val: num(tot.registro), sub: null, icon: 'database', color: 'text-brand-600 bg-brand-50' },
+        { label: 'Contactos Totales', val: num(tot.Contacto), sub: tot.pContacto, icon: 'phone-call', color: 'text-blue-600 bg-blue-50' },
+        { label: 'Contacto Efectivo (CE)', val: num(tot.CE), sub: tot.pCE, icon: 'user-check', color: 'text-emerald-600 bg-emerald-50' },
+        { label: 'Contacto No Efectivo', val: num(tot.CNE), sub: tot.pCNE, icon: 'user-x', color: 'text-amber-600 bg-amber-50' },
+        { label: 'Ventas Realizadas', val: num(tot.Venta), sub: tot.pConversion, icon: 'shopping-bag', color: 'text-teal-600 bg-teal-50' },
+        { label: 'Citas Agendadas', val: num(tot.Agendado), sub: tot.pAgendados, icon: 'calendar', color: 'text-indigo-600 bg-indigo-50' },
+        { label: 'Tasa de Cierre', val: pct(tot.pTasaCierre), sub: tot.pTasaCierre, icon: 'target', color: 'text-rose-600 bg-rose-50' },
+        { label: 'Tasa de Conversión', val: pct(tot.pConversion), sub: tot.pConversion, icon: 'trending-up', color: 'text-cyan-600 bg-cyan-50' }
+      ];
+
+      $('kpis').innerHTML = kpiDefs.map(k => `
+        <div class="glass-card glass-card-hover rounded-2xl p-4 flex flex-col justify-between space-y-3 border border-slate-200">
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">${k.label}</span>
+            <div class="p-2 rounded-xl border border-slate-200/60 ${k.color}">
+              <i data-lucide="${k.icon}" class="w-4 h-4"></i>
+            </div>
+          </div>
+          <div>
+            <div class="text-xl font-bold font-mono text-slate-900 tracking-tight">${k.val}</div>
+            ${k.sub != null ? `
+              <div class="mt-2 space-y-1">
+                <div class="flex justify-between text-[10px] text-slate-500 font-mono">
+                  <span>Rendimiento</span>
+                  <span>${pct(k.sub)}</span>
+                </div>
+                <div class="w-full bg-slate-100 h-1 rounded-full overflow-hidden">
+                  <div class="bg-brand-500 h-full rounded-full" style="width: ${Math.min(k.sub * 100, 100)}%"></div>
+                </div>
+              </div>
+            ` : '<div class="h-4"></div>'}
+          </div>
+        </div>
+      `).join('');
+
+      // RENDERING TABLA SOCIO
+      const socios = [...new Set(rows.map(r => r['Socio']).filter(Boolean))].sort();
+      const cols = ['Socio','Registro','Contacto','CE','CNE','NC','SG','Venta','Agendado','%Contacto','%CE','%C.Válido','%C.No Válido','%CNE','%NC','%SG','%T.Cierre','%Conversión','%Agendados'];
+      
+      $q('#socioTable thead').innerHTML = '<tr>' + cols.map((c, i) => 
+        `<th class="py-3 px-4 ${i === 0 ? 'sticky-col' : 'text-right'}">${c}</th>`
+      ).join('') + '</tr>';
+
+      const rowsHtml = socios.map(s => {
+        const st = socioStats(rows.filter(r => r['Socio'] === s));
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-4 font-sans font-semibold text-slate-800 sticky-col">${s}</td>
+            <td class="py-2.5 px-4 text-right">${num(st.registro)}</td>
+            <td class="py-2.5 px-4 text-right text-brand-600 font-semibold">${num(st.Contacto)}</td>
+            <td class="py-2.5 px-4 text-right text-emerald-600">${num(st.CE)}</td>
+            <td class="py-2.5 px-4 text-right text-amber-600">${num(st.CNE)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${num(st.NC)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${num(st.SG)}</td>
+            <td class="py-2.5 px-4 text-right text-teal-600 font-bold">${num(st.Venta)}</td>
+            <td class="py-2.5 px-4 text-right text-indigo-600">${num(st.Agendado)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pContacto)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pCE)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pContValido)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pContNoValido)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pCNE)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pNC)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pSG)}</td>
+            <td class="py-2.5 px-4 text-right text-rose-600 font-semibold">${pct(st.pTasaCierre)}</td>
+            <td class="py-2.5 px-4 text-right text-cyan-600 font-semibold">${pct(st.pConversion)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(st.pAgendados)}</td>
+          </tr>
+        `;
+      }).join('') + `
+        <tr class="bg-brand-50/60 font-bold border-t border-brand-200 text-slate-900">
+          <td class="py-3 px-4 font-sans sticky-col bg-slate-100">TOTAL GENERAL</td>
+          <td class="py-3 px-4 text-right">${num(tot.registro)}</td>
+          <td class="py-3 px-4 text-right text-brand-600">${num(tot.Contacto)}</td>
+          <td class="py-3 px-4 text-right text-emerald-600">${num(tot.CE)}</td>
+          <td class="py-3 px-4 text-right text-amber-600">${num(tot.CNE)}</td>
+          <td class="py-3 px-4 text-right">${num(tot.NC)}</td>
+          <td class="py-3 px-4 text-right">${num(tot.SG)}</td>
+          <td class="py-3 px-4 text-right text-teal-600">${num(tot.Venta)}</td>
+          <td class="py-3 px-4 text-right text-indigo-600">${num(tot.Agendado)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pContacto)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pCE)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pContValido)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pContNoValido)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pCNE)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pNC)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pSG)}</td>
+          <td class="py-3 px-4 text-right text-rose-600">${pct(tot.pTasaCierre)}</td>
+          <td class="py-3 px-4 text-right text-cyan-600">${pct(tot.pConversion)}</td>
+          <td class="py-3 px-4 text-right">${pct(tot.pAgendados)}</td>
+        </tr>
+      `;
+      $q('#socioTable tbody').innerHTML = rowsHtml;
+
+      // RENDERING TIPIFICACIONES ACCORDION
+      const grp = {};
+      rows.forEach(r => {
+        const tipo = r['Tipo_Contacto_Final'] || '(sin dato)';
+        const cpto = r['Concepto4_Final'] || '(sin dato)';
+        grp[tipo] = grp[tipo] || {};
+        grp[tipo][cpto] = (grp[tipo][cpto] || 0) + 1;
+      });
+
+      let tipHtml = '';
+      Object.entries(grp)
+        .sort((a, b) => Object.values(b[1]).reduce((x, y) => x + y, 0) - Object.values(a[1]).reduce((x, y) => x + y, 0))
+        .forEach(([tipo, children], gi) => {
+          const gTotal = Object.values(children).reduce((a, b) => a + b, 0);
+          tipHtml += `
+            <tr class="grp-row bg-slate-50 hover:bg-slate-100 cursor-pointer transition-colors" data-g="${gi}">
+              <td class="py-2.5 px-4 font-sans font-semibold text-slate-800 flex items-center gap-2">
+                <i data-lucide="chevron-right" class="w-4 h-4 text-brand-600 rotate-arrow"></i>
+                <span>${tipo}</span>
+              </td>
+              <td class="py-2.5 px-4 text-right font-bold text-slate-900">${num(gTotal)}</td>
+              <td class="py-2.5 px-4 text-right text-brand-600 font-semibold">${pct(gTotal / (tot.registro || 1))}</td>
+            </tr>
+          `;
+          Object.entries(children).sort((a, b) => b[1] - a[1]).forEach(([c, n]) => {
+            tipHtml += `
+              <tr class="child-row g${gi} bg-white text-slate-600 hover:text-slate-900">
+                <td class="py-2 px-4 pl-10 font-sans text-xs border-l-2 border-brand-500">${c}</td>
+                <td class="py-2 px-4 text-right text-xs">${num(n)}</td>
+                <td class="py-2 px-4 text-right text-xs text-slate-400">${pct(n / (tot.registro || 1))}</td>
+              </tr>
+            `;
+          });
+        });
+
+      $q('#tipTable tbody').innerHTML = tipHtml;
+
+      // Event listener accordion
+      $q('#tipTable tbody').querySelectorAll('tr.grp-row').forEach(tr => {
+        tr.onclick = () => {
+          tr.classList.toggle('grp-active');
+          document.querySelectorAll('.g' + tr.dataset.g).forEach(c => c.classList.toggle('open'));
+        };
+      });
+
+      // RENDERING CHART DONUT
+      const motor = {};
+      rows.forEach(r => { 
+        const f = r['Fuente'] || '(sin dato)'; 
+        motor[f] = (motor[f] || 0) + 1; 
+      });
+
+      if (motorChart) motorChart.destroy();
+      
+      motorChart = new Chart($('motorChart'), {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(motor),
+          datasets: [{
+            data: Object.values(motor),
+            backgroundColor: ['#0d9488', '#f59e0b', '#6366f1', '#f43f5e', '#a855f7'],
+            borderWidth: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          plugins: {
+            legend: {
+              position: 'bottom',
+              labels: {
+                color: '#475569',
+                font: { family: 'Plus Jakarta Sans', size: 11 },
+                padding: 16,
+                usePointStyle: true
+              }
+            }
+          },
+          cutout: '72%'
+        }
+      });
+
+      // RENDERING RANKING AGENTES
+      const ag = {};
+      rows.forEach(r => {
+        const u = r['Gestion_Usuario'];
+        if (!u) return;
+        ag[u] = ag[u] || { contactos: 0, agendado: 0, venta: 0 };
+        if ((Number(r['CE']) || 0) + (Number(r['CNE']) || 0) > 0) ag[u].contactos++;
+        ag[u].agendado += Number(r['Agendado']) || 0;
+        ag[u].venta += Number(r['Venta']) || 0;
+      });
+
+      const top = Object.entries(ag)
+        .sort((a, b) => b[1].venta - a[1].venta || b[1].agendado - a[1].agendado)
+        .slice(0, 15);
+
+      $q('#agenteTable tbody').innerHTML = top.map(([u, d], idx) => {
+        const badge = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `#${idx + 1}`;
+        return `
+          <tr class="hover:bg-slate-50 transition-colors">
+            <td class="py-2.5 px-4 font-sans font-medium text-slate-800 flex items-center gap-2">
+              <span class="text-xs text-slate-400 w-5 font-mono">${badge}</span>
+              <span>${u}</span>
+            </td>
+            <td class="py-2.5 px-4 text-right text-slate-600">${num(d.contactos)}</td>
+            <td class="py-2.5 px-4 text-right text-indigo-600">${num(d.agendado)}</td>
+            <td class="py-2.5 px-4 text-right text-emerald-600 font-bold">${num(d.venta)}</td>
+            <td class="py-2.5 px-4 text-right text-slate-500">${pct(d.contactos ? d.venta / d.contactos : 0)}</td>
+          </tr>
+        `;
+      }).join('') || '<tr><td colspan="5" class="py-6 text-center text-slate-400 font-sans">Sin datos de agente (Gestion_Usuario) en este filtro.</td></tr>';
+
+      // Re-render Lucide icons for dynamically added content
+      lucide.createIcons();
+    }
+  </script>
+</body>
+</html>

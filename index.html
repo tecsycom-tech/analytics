@@ -4,20 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reportería Tipificaciones WIN | TECSYCOM</title>
-    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/combo-chart--v1.png">
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Header claro -->
     <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-6 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center space-x-3">
@@ -32,51 +26,45 @@
                 </div>
             </div>
 
-            <!-- Estado de Sincronización y Botón Limpio -->
             <div class="flex items-center space-x-4 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl">
                 <div class="text-right">
                     <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Última Actualización</p>
                     <p class="text-xs font-bold text-emerald-600" id="last-sync-time">Cargando...</p>
                 </div>
-                <button onclick="syncData(true)" id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg text-sm shadow-xs transition-all flex items-center justify-center" title="Limpiar y Volver a Sincronizar">
+                <button onclick="syncData()" id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg text-sm shadow-xs transition-all flex items-center justify-center" title="Limpiar y Volver a Sincronizar">
                     <i class="fa-solid fa-rotate-right" id="refresh-icon"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-6 py-6 flex-grow w-full">
         
-        <!-- Indicator Banner -->
         <div id="sync-banner" class="hidden mb-6 bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
             <div class="flex items-center space-x-3 text-blue-800 text-sm">
                 <i class="fa-solid fa-circle-info text-blue-600 text-base"></i>
-                <span>Los datos mostrados han sido procesados y optimizados desde Google Sheets.</span>
+                <span>Sincronización completa con Google Sheets exitosa.</span>
             </div>
-            <button onclick="downloadReportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-xs shadow-xs transition flex items-center space-x-2">
+            <button onclick="downloadFullExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-xs shadow-xs transition flex items-center space-x-2">
                 <i class="fa-solid fa-file-excel"></i>
-                <span>Exportar Resumen (Excel)</span>
+                <span>Exportar Hoja Completa (Excel)</span>
             </button>
         </div>
 
-        <!-- Pantalla de Carga / Sincronizando -->
         <div id="loading-screen" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 text-center max-w-md mx-auto my-12">
             <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs animate-bounce">
                 <i class="fa-solid fa-cloud-arrow-down"></i>
             </div>
             <h2 class="text-lg font-bold text-gray-900 mb-1">Sincronizando Registros</h2>
-            <p class="text-xs text-gray-500 mb-4">Conectando con Google Sheets y optimizando la carga de datos...</p>
+            <p class="text-xs text-gray-500 mb-4">Conectando con Google Sheets y formateando datos...</p>
             <div class="inline-flex items-center space-x-2 text-blue-600 font-medium text-xs bg-blue-50 px-3 py-1.5 rounded-full">
                 <i class="fa-solid fa-spinner fa-spin"></i>
-                <span id="loading-text">Limpiando datos y consultando servidor...</span>
+                <span>Procesando información...</span>
             </div>
         </div>
 
-        <!-- Dashboard Section -->
         <div id="dashboard-section" class="hidden space-y-6">
 
-            <!-- KPI Cards Grid -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                     <div>
@@ -108,7 +96,6 @@
                 </div>
             </div>
 
-            <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-xs">
                     <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 flex items-center justify-between">
@@ -130,22 +117,19 @@
                 </div>
             </div>
 
-            <!-- Data Summary Table -->
             <div class="bg-white border border-gray-200 rounded-2xl shadow-xs overflow-hidden">
                 <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/60">
                     <div>
-                        <h3 class="font-bold text-gray-900 text-sm">Muestra de Registros Recientes</h3>
-                        <p class="text-xs text-gray-500">Optimizando la visualización con los primeros 50 registros</p>
+                        <h3 class="font-bold text-gray-900 text-sm">Muestra de Registros Recientes (Primeros 50 - Todas las columnas)</h3>
+                        <p class="text-xs text-gray-500">Visualización detallada de la hoja Tipificacaciones_WIN</p>
                     </div>
                     <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">Sincronizado</span>
                 </div>
-                <div class="overflow-x-auto max-h-80">
+                <div class="overflow-x-auto max-h-96">
                     <table id="preview-table" class="min-w-full divide-y divide-gray-200 text-left text-xs">
                         <thead class="bg-gray-100 text-gray-600 font-bold sticky top-0">
-                            <!-- Dinámico -->
                         </thead>
                         <tbody class="divide-y divide-gray-200 text-gray-700 bg-white">
-                            <!-- Dinámico -->
                         </tbody>
                     </table>
                 </div>
@@ -155,9 +139,7 @@
 
     </main>
 
-    <!-- Script de Lógica de Limpieza y Renderizado Ultrarrápido -->
     <script>
-        // CONFIGURACIÓN DE TU WEB APP EN GOOGLE APPS SCRIPT
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
 
         let currentData = null;
@@ -165,10 +147,9 @@
         let chartDeptoInstance = null;
 
         window.addEventListener('DOMContentLoaded', () => {
-            syncData(false);
+            syncData();
         });
 
-        // Limpieza completa del estado para evitar acumulaciones o errores de sincronización
         function clearDashboardState() {
             document.getElementById('dashboard-section').classList.add('hidden');
             document.getElementById('sync-banner').classList.add('hidden');
@@ -183,18 +164,11 @@
             table.querySelector('thead').innerHTML = '';
             table.querySelector('tbody').innerHTML = '';
 
-            // Destruir gráficos anteriores para no sobrecargar el canvas
-            if (chartTipoInstance) {
-                chartTipoInstance.destroy();
-                chartTipoInstance = null;
-            }
-            if (chartDeptoInstance) {
-                chartDeptoInstance.destroy();
-                chartDeptoInstance = null;
-            }
+            if (chartTipoInstance) { chartTipoInstance.destroy(); chartTipoInstance = null; }
+            if (chartDeptoInstance) { chartDeptoInstance.destroy(); chartDeptoInstance = null; }
         }
 
-        async function syncData(isManualRefresh = false) {
+        async function syncData() {
             const icon = document.getElementById('refresh-icon');
             icon.classList.add('fa-spin');
 
@@ -207,15 +181,13 @@
                 if (result && result.summary) {
                     currentData = result;
                     renderDashboard(result);
-                    
-                    const now = new Date();
-                    document.getElementById('last-sync-time').innerText = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+                    document.getElementById('last-sync-time').innerText = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
                 } else {
-                    throw new Error('Formato devuelto no válido.');
+                    throw new Error('Estructura inválida.');
                 }
             } catch (error) {
-                console.error('Error durante la sincronización:', error);
-                alert('No se pudieron obtener los datos. Verifique la URL de Apps Script.');
+                console.error(error);
+                alert('No se pudieron obtener los datos de Google Sheets.');
                 document.getElementById('last-sync-time').innerText = 'Error de conexión';
             } finally {
                 icon.classList.remove('fa-spin');
@@ -225,19 +197,14 @@
         function renderDashboard(data) {
             const summary = data.summary;
 
-            // Cargar KPIs
             document.getElementById('kpi-total').innerText = summary.total.toLocaleString();
             document.getElementById('kpi-efectivos').innerText = summary.efectivos.toLocaleString();
             document.getElementById('kpi-nocontactos').innerText = summary.noContactos.toLocaleString();
             document.getElementById('kpi-deptos').innerText = summary.deptosTotal.toLocaleString();
 
-            // Renderizar Tabla
             renderTablePreview(data.preview);
-
-            // Renderizar Gráficos
             renderCharts(summary.tiposCount, summary.deptosCount);
 
-            // Ocultar Carga y Mostrar Dashboard
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('sync-banner').classList.remove('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
@@ -270,7 +237,6 @@
         }
 
         function renderCharts(tiposCount, deptosCount) {
-            // Gráfico de Donut (Tipos)
             const ctxTipo = document.getElementById('chartTipo').getContext('2d');
             chartTipoInstance = new Chart(ctxTipo, {
                 type: 'doughnut',
@@ -290,7 +256,6 @@
                 }
             });
 
-            // Gráfico de Barras (Top Departamentos)
             const sortedDeptos = Object.entries(deptosCount).sort((a,b) => b[1] - a[1]).slice(0, 6);
             const ctxDepto = document.getElementById('chartDepto').getContext('2d');
 
@@ -317,22 +282,16 @@
             });
         }
 
-        function downloadReportExcel() {
-            if (!currentData || !currentData.summary) {
-                alert('No hay datos sincronizados.');
+        function downloadFullExcel() {
+            if (!currentData || !currentData.fullData) {
+                alert('No hay datos completos sincronizados para exportar.');
                 return;
             }
-            const exportData = [
-                { Métrica: "Total Registros", Valor: currentData.summary.total },
-                { Métrica: "Contactos Efectivos", Valor: currentData.summary.efectivos },
-                { Métrica: "No Contactos / Discador", Valor: currentData.summary.noContactos },
-                { Métrica: "Departamentos Únicos", Valor: currentData.summary.deptosTotal }
-            ];
-
-            const newWs = XLSX.utils.json_to_sheet(exportData);
+            // Exporta absolutamente todos los registros y todas las columnas originales con formato limpio
+            const newWs = XLSX.utils.json_to_sheet(currentData.fullData);
             const newWb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(newWb, newWs, "Resumen_Tipificaciones_WIN");
-            XLSX.writeFile(newWb, "Resumen_Tipificaciones_WIN.xlsx");
+            XLSX.utils.book_append_sheet(newWb, newWs, "Tipificacaciones_WIN");
+            XLSX.writeFile(newWb, "Reporte_Completo_Tipificacaciones_WIN.xlsx");
         }
     </script>
 </body>

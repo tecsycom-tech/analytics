@@ -3,42 +3,42 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Operativo | Tipificaciones WIN</title>
-    <!-- Favicon profesional referente a su función -->
+    <title>Reportería Tipificaciones WIN | TECSYCOM</title>
+    <!-- Favicon -->
     <link rel="icon" type="image/png" href="https://img.icons8.com/color/96/combo-chart--v1.png">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- SheetJS (xlsx) para exportar reporte -->
+    <!-- SheetJS -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
-<body class="bg-slate-950 text-slate-100 font-sans antialiased min-h-screen flex flex-col">
+<body class="bg-gray-50 text-gray-800 font-sans antialiased min-h-screen flex flex-col">
 
-    <!-- Header -->
-    <header class="bg-slate-900 border-b border-slate-800 shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+    <!-- Header claro -->
+    <header class="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-6 py-3.5 flex flex-col sm:flex-row justify-between items-center gap-3">
             <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center text-indigo-400 text-xl shadow-inner">
+                <div class="w-10 h-10 rounded-xl bg-blue-50 border border-blue-100 flex items-center justify-center text-blue-600 text-xl shadow-xs">
                     <i class="fa-solid fa-chart-line"></i>
                 </div>
                 <div>
-                    <h1 class="text-base font-bold tracking-tight text-white flex items-center gap-2">
-                        TECSYCOM <span class="text-xs bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">Tipificacaciones_WIN</span>
+                    <h1 class="text-base font-bold text-gray-900 flex items-center gap-2">
+                        TECSYCOM <span class="text-xs bg-blue-100 text-blue-700 px-2.5 py-0.5 rounded-full font-semibold">Tipificacaciones_WIN</span>
                     </h1>
-                    <p class="text-xs text-slate-400">Panel Interactivo en Tiempo Real</p>
+                    <p class="text-xs text-gray-500">Panel Ejecutivo de Control y Sync en Vivo</p>
                 </div>
             </div>
 
-            <!-- Estado de Sincronización y Botón de Actualizar -->
-            <div class="flex items-center space-x-4 bg-slate-950/60 border border-slate-800 px-4 py-2 rounded-xl">
+            <!-- Estado de Sincronización y Botón Limpio -->
+            <div class="flex items-center space-x-4 bg-gray-50 border border-gray-200 px-4 py-2 rounded-xl">
                 <div class="text-right">
-                    <p class="text-[10px] uppercase font-bold tracking-wider text-slate-400">Última Actualización</p>
-                    <p class="text-xs font-semibold text-emerald-400" id="last-sync-time">Cargando...</p>
+                    <p class="text-[10px] uppercase font-bold tracking-wider text-gray-400">Última Actualización</p>
+                    <p class="text-xs font-bold text-emerald-600" id="last-sync-time">Cargando...</p>
                 </div>
-                <button onclick="fetchDataFromCloud()" id="refresh-btn" class="bg-indigo-600 hover:bg-indigo-500 text-white p-2.5 rounded-lg text-sm shadow transition flex items-center justify-center" title="Volver a actualizar datos en tiempo real">
+                <button onclick="syncData(true)" id="refresh-btn" class="bg-blue-600 hover:bg-blue-700 text-white p-2.5 rounded-lg text-sm shadow-xs transition-all flex items-center justify-center" title="Limpiar y Volver a Sincronizar">
                     <i class="fa-solid fa-rotate-right" id="refresh-icon"></i>
                 </button>
             </div>
@@ -46,107 +46,105 @@
     </header>
 
     <!-- Main Container -->
-    <main class="max-w-7xl mx-auto px-6 py-8 flex-grow w-full">
+    <main class="max-w-7xl mx-auto px-6 py-6 flex-grow w-full">
         
-        <!-- Pantalla de Carga Inicial -->
-        <div id="loading-screen" class="bg-slate-900 border border-slate-800 rounded-2xl shadow-xl p-12 text-center max-w-xl mx-auto my-16">
-            <div class="w-16 h-16 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-2xl flex items-center justify-center mx-auto mb-6 text-2xl shadow-inner animate-pulse">
+        <!-- Indicator Banner -->
+        <div id="sync-banner" class="hidden mb-6 bg-blue-50/80 border border-blue-200 rounded-xl p-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3 text-blue-800 text-sm">
+                <i class="fa-solid fa-circle-info text-blue-600 text-base"></i>
+                <span>Los datos mostrados han sido procesados y optimizados desde Google Sheets.</span>
+            </div>
+            <button onclick="downloadReportExcel()" class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg text-xs shadow-xs transition flex items-center space-x-2">
+                <i class="fa-solid fa-file-excel"></i>
+                <span>Exportar Resumen (Excel)</span>
+            </button>
+        </div>
+
+        <!-- Pantalla de Carga / Sincronizando -->
+        <div id="loading-screen" class="bg-white border border-gray-200 rounded-2xl shadow-sm p-12 text-center max-w-md mx-auto my-12">
+            <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs animate-bounce">
                 <i class="fa-solid fa-cloud-arrow-down"></i>
             </div>
-            <h2 class="text-xl font-bold text-white mb-2">Conectando con Google Sheets</h2>
-            <p class="text-sm text-slate-400 mb-6">Obteniendo registros en tiempo real de la hoja <span class="text-indigo-400 font-semibold">Tipificacaciones_WIN</span>...</p>
-            <div class="inline-flex items-center space-x-2 text-indigo-400 font-semibold text-sm">
-                <i class="fa-solid fa-spinner fa-spin text-lg"></i>
-                <span>Sincronizando datos...</span>
+            <h2 class="text-lg font-bold text-gray-900 mb-1">Sincronizando Registros</h2>
+            <p class="text-xs text-gray-500 mb-4">Conectando con Google Sheets y optimizando la carga de datos...</p>
+            <div class="inline-flex items-center space-x-2 text-blue-600 font-medium text-xs bg-blue-50 px-3 py-1.5 rounded-full">
+                <i class="fa-solid fa-spinner fa-spin"></i>
+                <span id="loading-text">Limpiando datos y consultando servidor...</span>
             </div>
         </div>
 
-        <!-- Dashboard Section (Oculto hasta que carguen los datos) -->
-        <div id="dashboard-section" class="hidden space-y-8">
-            
-            <!-- Acciones y Exportación -->
-            <div class="flex flex-col sm:flex-row justify-between items-center bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm gap-4">
-                <div>
-                    <h3 class="text-lg font-bold text-white">Reporte General Consolidado</h3>
-                    <p class="text-xs text-slate-400 mt-0.5" id="record-count">Total de registros analizados: 0</p>
-                </div>
-                <div class="flex items-center space-x-3">
-                    <button onclick="downloadReportExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-medium px-5 py-2.5 rounded-xl text-sm shadow-md transition flex items-center space-x-2">
-                        <i class="fa-solid fa-file-excel"></i>
-                        <span>Descargar Reportería (Excel)</span>
-                    </button>
-                </div>
-            </div>
+        <!-- Dashboard Section -->
+        <div id="dashboard-section" class="hidden space-y-6">
 
             <!-- KPI Cards Grid -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Registros Totales</p>
-                        <h4 class="text-2xl font-extrabold text-white mt-1" id="kpi-total">0</h4>
+                        <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Total Registros</p>
+                        <h4 class="text-2xl font-extrabold text-gray-900 mt-1" id="kpi-total">0</h4>
                     </div>
-                    <div class="p-4 bg-indigo-600/10 border border-indigo-500/20 text-indigo-400 rounded-xl text-xl"><i class="fa-solid fa-database"></i></div>
+                    <div class="p-3.5 bg-blue-50 text-blue-600 rounded-xl text-lg"><i class="fa-solid fa-database"></i></div>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Contactos Efectivos</p>
-                        <h4 class="text-2xl font-extrabold text-emerald-400 mt-1" id="kpi-efectivos">0</h4>
+                        <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Contactos Efectivos</p>
+                        <h4 class="text-2xl font-extrabold text-emerald-600 mt-1" id="kpi-efectivos">0</h4>
                     </div>
-                    <div class="p-4 bg-emerald-600/10 border border-emerald-500/20 text-emerald-400 rounded-xl text-xl"><i class="fa-solid fa-user-check"></i></div>
+                    <div class="p-3.5 bg-emerald-50 text-emerald-600 rounded-xl text-lg"><i class="fa-solid fa-user-check"></i></div>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">No Contactos / Discador</p>
-                        <h4 class="text-2xl font-extrabold text-amber-400 mt-1" id="kpi-nocontactos">0</h4>
+                        <p class="text-xs font-bold uppercase tracking-wider text-gray-400">No Contactos / Discador</p>
+                        <h4 class="text-2xl font-extrabold text-amber-600 mt-1" id="kpi-nocontactos">0</h4>
                     </div>
-                    <div class="p-4 bg-amber-600/10 border border-amber-500/20 text-amber-400 rounded-xl text-xl"><i class="fa-solid fa-phone-slash"></i></div>
+                    <div class="p-3.5 bg-amber-50 text-amber-600 rounded-xl text-lg"><i class="fa-solid fa-phone-slash"></i></div>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm flex items-center justify-between">
+                <div class="bg-white border border-gray-200 p-5 rounded-2xl shadow-xs flex items-center justify-between">
                     <div>
-                        <p class="text-xs font-bold uppercase tracking-wider text-slate-400">Departamentos</p>
-                        <h4 class="text-2xl font-extrabold text-blue-400 mt-1" id="kpi-deptos">0</h4>
+                        <p class="text-xs font-bold uppercase tracking-wider text-gray-400">Departamentos</p>
+                        <h4 class="text-2xl font-extrabold text-indigo-600 mt-1" id="kpi-deptos">0</h4>
                     </div>
-                    <div class="p-4 bg-blue-600/10 border border-blue-500/20 text-blue-400 rounded-xl text-xl"><i class="fa-solid fa-map-location-dot"></i></div>
+                    <div class="p-3.5 bg-indigo-50 text-indigo-600 rounded-xl text-lg"><i class="fa-solid fa-map-location-dot"></i></div>
                 </div>
             </div>
 
             <!-- Charts Section -->
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
-                    <h4 class="text-sm font-bold text-slate-200 mb-4 flex items-center justify-between">
-                        <span>Distribución por Tipo de Tipificación</span>
-                        <i class="fa-solid fa-chart-pie text-slate-500"></i>
+                <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-xs">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 flex items-center justify-between">
+                        <span>Distribución por Tipo</span>
+                        <i class="fa-solid fa-chart-pie text-gray-400"></i>
                     </h4>
-                    <div class="relative h-72">
+                    <div class="relative h-64">
                         <canvas id="chartTipo"></canvas>
                     </div>
                 </div>
-                <div class="bg-slate-900 border border-slate-800 p-6 rounded-2xl shadow-sm">
-                    <h4 class="text-sm font-bold text-slate-200 mb-4 flex items-center justify-between">
-                        <span>Top Departamentos con Mayor Actividad</span>
-                        <i class="fa-solid fa-chart-bar text-slate-500"></i>
+                <div class="bg-white border border-gray-200 p-6 rounded-2xl shadow-xs">
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-gray-500 mb-4 flex items-center justify-between">
+                        <span>Top Departamentos</span>
+                        <i class="fa-solid fa-chart-bar text-gray-400"></i>
                     </h4>
-                    <div class="relative h-72">
+                    <div class="relative h-64">
                         <canvas id="chartDepto"></canvas>
                     </div>
                 </div>
             </div>
 
             <!-- Data Summary Table -->
-            <div class="bg-slate-900 border border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-                <div class="px-6 py-5 border-b border-slate-800 flex justify-between items-center bg-slate-950/40">
+            <div class="bg-white border border-gray-200 rounded-2xl shadow-xs overflow-hidden">
+                <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50/60">
                     <div>
-                        <h3 class="font-bold text-white">Vista Previa de Registros Procesados</h3>
-                        <p class="text-xs text-slate-400 mt-0.5">Mostrando los primeros 50 registros sincronizados</p>
+                        <h3 class="font-bold text-gray-900 text-sm">Muestra de Registros Recientes</h3>
+                        <p class="text-xs text-gray-500">Optimizando la visualización con los primeros 50 registros</p>
                     </div>
-                    <span class="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 font-semibold px-3 py-1 rounded-full">En Vivo (Cloud)</span>
+                    <span class="text-xs bg-emerald-100 text-emerald-800 font-semibold px-2.5 py-0.5 rounded-full">Sincronizado</span>
                 </div>
-                <div class="overflow-x-auto max-h-96">
-                    <table id="preview-table" class="min-w-full divide-y divide-slate-800 text-left text-xs">
-                        <thead class="bg-slate-950 text-slate-300 font-bold sticky top-0">
+                <div class="overflow-x-auto max-h-80">
+                    <table id="preview-table" class="min-w-full divide-y divide-gray-200 text-left text-xs">
+                        <thead class="bg-gray-100 text-gray-600 font-bold sticky top-0">
                             <!-- Dinámico -->
                         </thead>
-                        <tbody class="divide-y divide-slate-800 text-slate-300 bg-slate-900/50">
+                        <tbody class="divide-y divide-gray-200 text-gray-700 bg-white">
                             <!-- Dinámico -->
                         </tbody>
                     </table>
@@ -157,41 +155,67 @@
 
     </main>
 
-    <!-- Script Principal con Conexión Integrada -->
+    <!-- Script de Lógica de Limpieza y Renderizado Ultrarrápido -->
     <script>
-        // CONFIGURACIÓN: Reemplaza esta URL con la Web App URL que obtengas al implementar tu Google Apps Script
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
+        // CONFIGURACIÓN DE TU WEB APP EN GOOGLE APPS SCRIPT
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/TU_URL_AQUI/exec";
 
-        let processedData = [];
+        let currentData = null;
         let chartTipoInstance = null;
         let chartDeptoInstance = null;
 
-        // Cargar automáticamente al abrir la página
         window.addEventListener('DOMContentLoaded', () => {
-            fetchDataFromCloud();
+            syncData(false);
         });
 
-        async function fetchDataFromCloud() {
+        // Limpieza completa del estado para evitar acumulaciones o errores de sincronización
+        function clearDashboardState() {
+            document.getElementById('dashboard-section').classList.add('hidden');
+            document.getElementById('sync-banner').classList.add('hidden');
+            document.getElementById('loading-screen').classList.remove('hidden');
+
+            document.getElementById('kpi-total').innerText = '0';
+            document.getElementById('kpi-efectivos').innerText = '0';
+            document.getElementById('kpi-nocontactos').innerText = '0';
+            document.getElementById('kpi-deptos').innerText = '0';
+
+            const table = document.getElementById('preview-table');
+            table.querySelector('thead').innerHTML = '';
+            table.querySelector('tbody').innerHTML = '';
+
+            // Destruir gráficos anteriores para no sobrecargar el canvas
+            if (chartTipoInstance) {
+                chartTipoInstance.destroy();
+                chartTipoInstance = null;
+            }
+            if (chartDeptoInstance) {
+                chartDeptoInstance.destroy();
+                chartDeptoInstance = null;
+            }
+        }
+
+        async function syncData(isManualRefresh = false) {
             const icon = document.getElementById('refresh-icon');
             icon.classList.add('fa-spin');
 
+            clearDashboardState();
+
             try {
                 const response = await fetch(GOOGLE_SCRIPT_URL);
-                const jsonResult = await response.json();
-                
-                if (jsonResult && jsonResult.data) {
-                    processedData = jsonResult.data;
-                    const now = new Date();
-                    const timeString = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
+                const result = await response.json();
+
+                if (result && result.summary) {
+                    currentData = result;
+                    renderDashboard(result);
                     
-                    document.getElementById('last-sync-time').innerText = timeString;
-                    renderDashboard(processedData);
+                    const now = new Date();
+                    document.getElementById('last-sync-time').innerText = now.toLocaleDateString() + ' ' + now.toLocaleTimeString();
                 } else {
-                    throw new Error('Estructura de datos inválida desde Apps Script.');
+                    throw new Error('Formato devuelto no válido.');
                 }
             } catch (error) {
-                console.error(error);
-                alert('No se pudo sincronizar automáticamente con Google Sheets. Verifique la conexión o la URL configurada.');
+                console.error('Error durante la sincronización:', error);
+                alert('No se pudieron obtener los datos. Verifique la URL de Apps Script.');
                 document.getElementById('last-sync-time').innerText = 'Error de conexión';
             } finally {
                 icon.classList.remove('fa-spin');
@@ -199,98 +223,76 @@
         }
 
         function renderDashboard(data) {
-            document.getElementById('record-count').innerText = `Total de registros analizados: ${data.length.toLocaleString()}`;
-            document.getElementById('kpi-total').innerText = data.length.toLocaleString();
+            const summary = data.summary;
 
-            let efectivos = 0;
-            let noContactos = 0;
-            let deptosSet = new Set();
-            let tiposCount = {};
-            let deptosCount = {};
+            // Cargar KPIs
+            document.getElementById('kpi-total').innerText = summary.total.toLocaleString();
+            document.getElementById('kpi-efectivos').innerText = summary.efectivos.toLocaleString();
+            document.getElementById('kpi-nocontactos').innerText = summary.noContactos.toLocaleString();
+            document.getElementById('kpi-deptos').innerText = summary.deptosTotal.toLocaleString();
 
-            data.forEach(row => {
-                let tipo = row['Tipo'] || row['tipo'] || row['Tipo Tipificación'] || 'Sin Tipo';
-                let depto = row['Departamento'] || row['Departamento '] || row['DEPARTAMENTO'] || 'No especificado';
-                
-                tiposCount[tipo] = (tiposCount[tipo] || 0) + 1;
-                if (depto && depto !== 'No especificado') {
-                    deptosSet.add(depto);
-                    deptosCount[depto] = (deptosCount[depto] || 0) + 1;
-                }
+            // Renderizar Tabla
+            renderTablePreview(data.preview);
 
-                let tipoLower = String(tipo).toLowerCase();
-                if (tipoLower.includes('contacto') && !tipoLower.includes('no efectivo')) {
-                    efectivos++;
-                } else {
-                    noContactos++;
-                }
-            });
+            // Renderizar Gráficos
+            renderCharts(summary.tiposCount, summary.deptosCount);
 
-            document.getElementById('kpi-efectivos').innerText = efectivos.toLocaleString();
-            document.getElementById('kpi-nocontactos').innerText = noContactos.toLocaleString();
-            document.getElementById('kpi-deptos').innerText = deptosSet.size;
-
-            renderTablePreview(data);
-            renderCharts(tiposCount, deptosCount);
-
+            // Ocultar Carga y Mostrar Dashboard
             document.getElementById('loading-screen').classList.add('hidden');
+            document.getElementById('sync-banner').classList.remove('hidden');
             document.getElementById('dashboard-section').classList.remove('hidden');
         }
 
-        function renderTablePreview(data) {
+        function renderTablePreview(previewRows) {
+            if (!previewRows || previewRows.length === 0) return;
+
             const table = document.getElementById('preview-table');
             const thead = table.querySelector('thead');
             const tbody = table.querySelector('tbody');
-            
-            thead.innerHTML = '';
-            tbody.innerHTML = '';
 
-            if (data.length === 0) return;
-
-            const headers = Object.keys(data[0]).slice(0, 12);
+            const headers = Object.keys(previewRows[0]);
             let headerRow = '<tr>';
             headers.forEach(h => {
-                headerRow += `<th class="px-4 py-3 whitespace-nowrap">${h}</th>`;
+                headerRow += `<th class="px-4 py-2.5 whitespace-nowrap">${h}</th>`;
             });
             headerRow += '</tr>';
             thead.innerHTML = headerRow;
 
-            data.slice(0, 50).forEach(row => {
-                let tr = '<tr class="hover:bg-slate-800/50 transition-colors">';
+            let tbodyHtml = '';
+            previewRows.forEach(row => {
+                tbodyHtml += '<tr class="hover:bg-gray-50 transition-colors">';
                 headers.forEach(h => {
-                    let val = row[h] !== undefined ? row[h] : '';
-                    tr += `<td class="px-4 py-2.5 whitespace-nowrap">${val}</td>`;
+                    tbodyHtml += `<td class="px-4 py-2 whitespace-nowrap">${row[h] !== undefined ? row[h] : ''}</td>`;
                 });
-                tr += '</tr>';
-                tbody.innerHTML += tr;
+                tbodyHtml += '</tr>';
             });
+            tbody.innerHTML = tbodyHtml;
         }
 
         function renderCharts(tiposCount, deptosCount) {
+            // Gráfico de Donut (Tipos)
             const ctxTipo = document.getElementById('chartTipo').getContext('2d');
-            if (chartTipoInstance) chartTipoInstance.destroy();
-            
             chartTipoInstance = new Chart(ctxTipo, {
                 type: 'doughnut',
                 data: {
                     labels: Object.keys(tiposCount),
                     datasets: [{
                         data: Object.values(tiposCount),
-                        backgroundColor: ['#6366f1', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
-                        borderColor: '#1e293b',
+                        backgroundColor: ['#2563eb', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'],
+                        borderColor: '#ffffff',
                         borderWidth: 2
                     }]
                 },
                 options: { 
                     responsive: true, 
                     maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 }, color: '#cbd5e1' } } }
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 11 }, color: '#475569' } } }
                 }
             });
 
+            // Gráfico de Barras (Top Departamentos)
             const sortedDeptos = Object.entries(deptosCount).sort((a,b) => b[1] - a[1]).slice(0, 6);
             const ctxDepto = document.getElementById('chartDepto').getContext('2d');
-            if (chartDeptoInstance) chartDeptoInstance.destroy();
 
             chartDeptoInstance = new Chart(ctxDepto, {
                 type: 'bar',
@@ -299,7 +301,7 @@
                     datasets: [{
                         label: 'Registros',
                         data: sortedDeptos.map(d => d[1]),
-                        backgroundColor: '#6366f1',
+                        backgroundColor: '#3b82f6',
                         borderRadius: 6
                     }]
                 },
@@ -308,22 +310,29 @@
                     maintainAspectRatio: false,
                     plugins: { legend: { display: false } },
                     scales: { 
-                        x: { ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } },
-                        y: { beginAtZero: true, ticks: { color: '#cbd5e1' }, grid: { color: '#334155' } } 
+                        x: { ticks: { color: '#64748b' }, grid: { display: false } },
+                        y: { beginAtZero: true, ticks: { color: '#64748b' }, grid: { color: '#f1f5f9' } } 
                     }
                 }
             });
         }
 
         function downloadReportExcel() {
-            if (processedData.length === 0) {
-                alert('No hay datos sincronizados para exportar.');
+            if (!currentData || !currentData.summary) {
+                alert('No hay datos sincronizados.');
                 return;
             }
-            const newWs = XLSX.utils.json_to_sheet(processedData);
+            const exportData = [
+                { Métrica: "Total Registros", Valor: currentData.summary.total },
+                { Métrica: "Contactos Efectivos", Valor: currentData.summary.efectivos },
+                { Métrica: "No Contactos / Discador", Valor: currentData.summary.noContactos },
+                { Métrica: "Departamentos Únicos", Valor: currentData.summary.deptosTotal }
+            ];
+
+            const newWs = XLSX.utils.json_to_sheet(exportData);
             const newWb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(newWb, newWs, "Tipificacaciones_WIN");
-            XLSX.writeFile(newWb, "Reporte_Dashboard_Tipificaciones_WIN.xlsx");
+            XLSX.utils.book_append_sheet(newWb, newWs, "Resumen_Tipificaciones_WIN");
+            XLSX.writeFile(newWb, "Resumen_Tipificaciones_WIN.xlsx");
         }
     </script>
 </body>

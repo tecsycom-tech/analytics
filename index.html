@@ -49,7 +49,7 @@
     <!-- Main Container -->
     <main class="max-w-7xl mx-auto px-6 py-6 flex-grow w-full">
         
-        <!-- Pantalla de Selección de Origen (Por defecto al abrir) -->
+        <!-- Pantalla de Selección de Origen -->
         <div id="selection-screen" class="max-w-3xl mx-auto my-12 bg-white border border-gray-200 rounded-2xl shadow-sm p-10 text-center">
             <div class="w-16 h-16 bg-blue-50 text-blue-600 rounded-2xl flex items-center justify-center mx-auto mb-4 text-2xl shadow-xs">
                 <i class="fa-solid fa-database"></i>
@@ -94,7 +94,7 @@
             <p class="text-xs text-gray-500" id="loading-desc">Analizando la hoja Tipificacaciones_WIN...</p>
         </div>
 
-        <!-- Dashboard Section (Oculto hasta procesar datos) -->
+        <!-- Dashboard Section -->
         <div id="dashboard-section" class="hidden space-y-6">
 
             <!-- Banner de Exportación -->
@@ -188,11 +188,24 @@
 
     <!-- Script General -->
     <script>
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyit-wx95Glim8epHlI5AkVGjqxmwobUMfJapxohNJvoF0mz2AeIF9W7pECuHqK15Th7A/exec";
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/TU_URL_AQUI/exec";
 
         let currentFullData = [];
         let chartTipoInstance = null;
         let chartDeptoInstance = null;
+
+        // Función limpiadora de formatos de Hora / Fecha
+        function cleanCellValue(value, colName) {
+            if (value === null || value === undefined) return "";
+            let str = String(value).trim();
+            
+            // Si viene en formato "Sat Dec 30 1899 16:31:26 GMT-0508..."
+            if (str.includes("1899") || str.includes("GMT")) {
+                let timeMatch = str.match(/\d{2}:\d{2}:\d{2}/);
+                if (timeMatch) return timeMatch[0];
+            }
+            return str;
+        }
 
         // Opción 1: Subir Archivo Local
         document.getElementById('excel-file-input').addEventListener('change', function(e) {
@@ -205,13 +218,13 @@
             reader.onload = function(e) {
                 try {
                     const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, {type: 'array', cellDates: true});
+                    const workbook = XLSX.read(data, {type: 'array', raw: false});
                     
                     const targetSheetName = workbook.SheetNames.find(name => 
                         name.toLowerCase().replace(/í/g, 'i').includes('tipificacaciones') || 
                         name.toLowerCase().replace(/í/g, 'i').includes('tipificacion')
                     );
-                    const sheetName = targetSheetName || workbook.SheetNames[4] || workbook.SheetNames[0];
+                    const sheetName = targetSheetName || workbook.SheetNames[0];
                     const worksheet = workbook.Sheets[sheetName];
                     
                     const jsonRows = XLSX.utils.sheet_to_json(worksheet, {defval: "", raw: false});
@@ -222,8 +235,17 @@
                         return;
                     }
 
-                    currentFullData = jsonRows;
-                    processAndRenderData(jsonRows, `Archivo Local: ${file.name}`);
+                    // Limpiar valores de hora/fecha en todas las filas
+                    const cleanedRows = jsonRows.map(row => {
+                        let newRow = {};
+                        Object.keys(row).forEach(k => {
+                            newRow[k] = cleanCellValue(row[k], k);
+                        });
+                        return newRow;
+                    });
+
+                    currentFullData = cleanedRows;
+                    processAndRenderData(cleanedRows, `Archivo Local: ${file.name}`);
                     document.getElementById('status-label').innerText = "Fuente: Local";
                     document.getElementById('last-sync-time').innerText = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
                     document.getElementById('banner-source-text').innerText = `Reporte generado desde archivo local: ${file.name}`;
@@ -235,7 +257,7 @@
             reader.readAsArrayBuffer(file);
         });
 
-        // Opción 2: Sincronizar en Línea (Solo cuando se presiona el botón)
+        // Opción 2: Sincronizar en Línea
         async function fetchDataFromCloud() {
             showLoading("Sincronizando en Línea", "Conectando con Google Sheets...");
 
@@ -244,8 +266,16 @@
                 const result = await response.json();
 
                 if (result && result.fullData) {
-                    currentFullData = result.fullData;
-                    processAndRenderData(result.fullData, "Google Sheets (En Vivo)");
+                    const cleanedRows = result.fullData.map(row => {
+                        let newRow = {};
+                        Object.keys(row).forEach(k => {
+                            newRow[k] = cleanCellValue(row[k], k);
+                        });
+                        return newRow;
+                    });
+
+                    currentFullData = cleanedRows;
+                    processAndRenderData(cleanedRows, "Google Sheets (En Vivo)");
                     document.getElementById('status-label').innerText = "Fuente: Nube";
                     document.getElementById('last-sync-time').innerText = new Date().toLocaleDateString() + ' ' + new Date().toLocaleTimeString();
                     document.getElementById('banner-source-text').innerText = "Reporte sincronizado en tiempo real desde Google Sheets.";
@@ -304,19 +334,14 @@
                 }
             });
 
-            // KPIs
             document.getElementById('kpi-total').innerText = dataRows.length.toLocaleString();
             document.getElementById('kpi-efectivos').innerText = efectivos.toLocaleString();
             document.getElementById('kpi-nocontactos').innerText = noContactos.toLocaleString();
             document.getElementById('kpi-deptos').innerText = deptosSet.size.toLocaleString();
 
-            // Vista previa (primeros 50)
             renderTablePreview(dataRows.slice(0, 50));
-
-            // Gráficos
             renderCharts(tiposCount, deptosCount);
 
-            // Mostrar Dashboard
             document.getElementById('loading-screen').classList.add('hidden');
             document.getElementById('selection-screen').classList.add('hidden');
             document.getElementById('header-status').classList.remove('hidden');
